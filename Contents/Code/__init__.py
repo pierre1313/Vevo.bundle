@@ -10,7 +10,7 @@ from uuid import uuid4
 ####################################################################################################
 
 # VEVO
-VEVO_TITLE_INFO            = 'http://videoplayer.vevo.com/VideoService/AuthenticateVideo?isrc=%s'
+VEVO_TITLE_INFO            = 'http://videoplayer.vevo.com/VideoService/AuthenticateVideo?isrc=%s&authToken=%s'
 
 # YouTube
 YT_VIDEO_PAGE              = 'http://www.youtube.com/watch?v=%s'
@@ -147,7 +147,7 @@ def GenresSubMenu (sender):
 ####################################################################################################
 
 def PlayVideo(sender, vevo_id):
-  info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id ))
+  info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, str(uuid4()) ))
 
   try:
     sourceType = info['video']['videoVersions'][0]['sourceType']
@@ -166,7 +166,7 @@ def GetYouTubeVideo(video_id):
   fmt_list = String.Unquote(fmt_list, usePlus=False)
   fmts = re.findall('([0-9]+)[^,]*', fmt_list)
 
-  index = YT_VIDEO_FORMATS.index( "1080p" )
+  index = YT_VIDEO_FORMATS.index( Prefs.Get('ytfmt') )
   if YT_FMT[index] in fmts:
     fmt = YT_FMT[index]
   else:
@@ -178,7 +178,6 @@ def GetYouTubeVideo(video_id):
         fmt = 5
 
   url = YT_GET_VIDEO_URL % (video_id, t, fmt)
-  Log('YouTube video URL --> ' + url)
   return url
 
 ####################################################################################################
@@ -204,11 +203,9 @@ def isLastPage(source):
     
 def doubleThumbSize(imagepath):
     try:
-        Log(imagepath)
         parts = re.split('[&=?]+',imagepath)
         parts[2]=str(int(parts[2])*2)
         parts[4]=str(int(parts[4])*2)        
-        Log(parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3] + "=" + parts[4] + "&crop=auto")
         return parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3]+ "=" + parts[4] + "&crop=auto"
     except:
         return ''
@@ -222,17 +219,16 @@ def getHiResImage(imagepath):
 
 def concatPage(url,pageNum):
     try:
-        parts = re.split('[?]+',url)
-        if (parts[0] == url):
-            return url +"?page=" + str(pageNum)    
+        if re.search('[?]',url):
+            return url +"&page=" + str(pageNum)    
         else:
-            return url +"&page=" + str(pageNum)
+            return url +"?page=" + str(pageNum)
     except:
         return url +"?page=" + str(pageNum)    
     
 def RSS_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
     pageurlconcat = concatPage(pageurl,page)
-    feed = HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">').replace('<div class="artistThumbWrapper">','').replace('</div></div>','')
+    feed = (HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME)).decode("utf-8").replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">').replace('<div class="artistThumbWrapper">','').replace('</div></div>','')
         
     dir = MediaContainer(title2=sender.itemTitle, viewGroup="List", replaceParent=replaceParent)
         
@@ -253,7 +249,7 @@ def RSS_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
 
 def RSS_Search_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
     pageurlconcat = concatPage(pageurl,page)
-    feed = HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
+    feed = (HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME)).decode("utf-8").replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
         
     dir = MediaContainer(title2=sender.itemTitle, viewGroup="List", replaceParent=replaceParent)
         
@@ -274,7 +270,7 @@ def RSS_Search_Artist_parser(sender, pageurl, page=1, replaceParent=False, query
 def RSS_Channel_parser(sender, pageurl, page=1, replaceParent=False):
     dir = MediaContainer(title2=sender.itemTitle, viewGroup="List", replaceParent=replaceParent)
     pageurlconcat = concatPage(pageurl,page)
-    feed = HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME)
+    feed = (HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME)).decode("utf-8")
 
     if page > 1:
       dir.Append(Function(DirectoryItem(RSS_Channel_parser,"Previous Page"),page = page-1,pageurl = pageurl))
@@ -337,7 +333,7 @@ def RSS_Search_parser(sender, pageurl, page=1, query=None, replaceParent=False):
 def RSS_parser(sender, pageurl, page=1, backgnd_art=R(ART), replaceParent=False, query=None):
     dir = MediaContainer(title2=sender.itemTitle, viewGroup="List", art=backgnd_art, replaceParent=replaceParent)
     pageurlconcat = concatPage(pageurl,page)
-    feed = HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
+    feed = (HTTP.Request(pageurlconcat, cacheTime = CACHE_TIME)).decode("utf-8").replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
     if page > 1:
       dir.Append(Function(DirectoryItem(RSS_parser,"Previous Page"),page = page-1,pageurl = pageurl))
 
