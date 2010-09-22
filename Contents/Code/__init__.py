@@ -241,7 +241,7 @@ def RSS_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
       
     for entry in XML.ElementFromString(feed, True).xpath("//li[@class='entry']"):
       title = entry.xpath("./div[@class='listContent']/h4/a")[0].text
-      thumb = doubleThumbSize(entry.xpath("./div[@class='listThumb']/a/img")[0].get('src'))
+      thumb = doubleThumbSize(entry.xpath("./div[@class='listThumb']//img")[0].get('src'))
       nextart = getHiResImage(thumb)
       link = FEEDBASE + entry.xpath("./div[@class='listThumb']/a")[0].get('href')
       dir.Append(Function(DirectoryItem(RSS_parser,title,thumb=thumb),pageurl = link,backgnd_art=nextart))
