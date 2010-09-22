@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<site site="http://www.vevo.com/VideoPlayer" plugin="http://cache.vevo.com/assets/swf/embeddedplayer.swf" initalState="paused" version="1.0">
+
+<crop x="0" y="0" width="1920" height="1080" />
+<!-- SEEKBAR NEEDS WORK
+<seekbar type="simple">
+<start x="0" y="421" />
+<end x="764" y="421" />
+<played>
+<color rgb="DFDFDF" />
+</played>
+</seekbar>
+-->
+<!-- PLAYING -->
+<state name="playing">
+<event>
+<condition>
+<command name="pause" />
+</condition>
+<action>
+               <move x="32" y="398" />
+               <pause time="100" />
+    <click x="32" y="398" />
+<goto state="paused" />
+</action>
+</event>
+
+   </state>
+
+<!-- PAUSED -->
+<state name="paused">
+<event>
+<condition>
+<command name="play" />
+</condition>
+<action>
+               <move x="32" y="398" />
+               <pause time="100" />
+<click x="32" y="398" />
+<goto state="playing" />
+</action>
+</event>
+</state>
+
+</site>
