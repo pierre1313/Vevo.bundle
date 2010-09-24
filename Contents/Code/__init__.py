@@ -154,8 +154,6 @@ def GetTitleArt(vevo_id, mimetype='image/jpeg'):
   try:
     info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
     art = info['video']['imageUrl'] +'?width=512&height=512&crop=auto'
-    HTTP.Request(art, cacheTime=CACHE_1MONTH)
-    return art
     image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
     if art[-4:4] == '.png':
       mimetype = 'image/png'
@@ -179,8 +177,6 @@ def GetArtistArt(vevo_id, mimetype='image/jpeg'):
   try:
     info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
     art = info['video']['mainArtists'][0]['imageUrl'] +'?width=1280&height=720&crop=auto'
-    HTTP.Request(art, cacheTime=CACHE_1MONTH)
-    return art
     image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
     if art[-4:4] == '.png':
       mimetype = 'image/png'
