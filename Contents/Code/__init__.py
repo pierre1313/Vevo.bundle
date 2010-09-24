@@ -148,7 +148,7 @@ def GenresSubMenu (sender):
 
 def PlayVideo(sender, vevo_id):
   info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id ))
-
+  Log(info)
   try:
     sourceType = info['video']['videoVersions'][0]['sourceType']
     return Redirect(WebVideoItem( GetBrightCoveVideo(id) ))
@@ -178,7 +178,7 @@ def GetYouTubeVideo(video_id):
         fmt = 5
 
   url = YT_GET_VIDEO_URL % (video_id, t, fmt)
-  Log('YouTube video URL --> ' + url)
+ # Log('YouTube video URL --> ' + url)
   return url
 
 ####################################################################################################
@@ -188,8 +188,8 @@ def GetBrightCoveVideo(video_id):
   service = client.getService('com.brightcove.player.runtime.PlayerMediaFacade')
   result = service.findMediaByReferenceId('', BC_PLAYER_ID, video_id, BC_PUBLISHER_ID)
 
-  Log(result)
-  Log(result['id'])
+ # Log(result)
+ # Log(result['id'])
 
   return BC_PLAYER % ( int(result['id']) )
 
@@ -204,11 +204,11 @@ def isLastPage(source):
     
 def doubleThumbSize(imagepath):
     try:
-        Log(imagepath)
+        #Log(imagepath)
         parts = re.split('[&=?]+',imagepath)
         parts[2]=str(int(parts[2])*2)
         parts[4]=str(int(parts[4])*2)        
-        Log(parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3] + "=" + parts[4] + "&crop=auto")
+        #Log(parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3] + "=" + parts[4] + "&crop=auto")
         return parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3]+ "=" + parts[4] + "&crop=auto"
     except:
         return ''
