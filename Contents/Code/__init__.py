@@ -23,7 +23,6 @@ BC_PLAYER_ID               = 105891355001
 BC_PUBLISHER_ID            = 62009797001
 BC_PLAYER                  = 'http://x.brightcove.com/plex/video.php?publisherId=%d&playerId=%d&videoId=%%d' % (BC_PUBLISHER_ID, BC_PLAYER_ID)
 
-
 VIDEO_PREFIX = "/video/vevo"
 NAME = 'Vevo'
 ART  = 'art-default.jpg'
@@ -148,6 +147,16 @@ def GetTitle(vevo_id):
   except:
     return ''
     
+####################################################################################################
+
+def GetArtistName(vevo_id):
+	  try:
+	    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+	    name = info['video']['mainArtists'][0]['artistName']
+	    return name
+	  except:
+	    return ''
+
 ###################################################################################################
 
 def GetTitleArt(vevo_id, mimetype='image/jpeg'):
@@ -161,16 +170,6 @@ def GetTitleArt(vevo_id, mimetype='image/jpeg'):
   except:
     return R(ICON)
 
-####################################################################################################
-
-def GetArtistName(vevo_id):
-	  try:
-	    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
-	    name = info['video']['mainArtists'][0]['artistName']
-	    return name
-	  except:
-	    return ''
-	   
 ####################################################################################################
 
 def GetArtistArt(vevo_id, mimetype='image/jpeg'):
@@ -240,24 +239,29 @@ def isLastPage(source):
 
 ####################################################################################################
 
-def doubleThumbSize(imagepath):
-    try:
-        parts = re.split('[&=?]+',imagepath)
-        parts[2]=str(int(parts[2])*2)
-        parts[4]=str(int(parts[4])*2)        
-        return parts[0] + "?" + parts[1]+ "=" + parts[2] + "&" + parts[3]+ "=" + parts[4] + "&crop=auto"
-    except:
-        return ''
+def GetSquareThumb(imagepath):
+	try:
+		mimetype='image/jpeg'
+		art = re.split('[?]+',imagepath)[0] + '?width=512&height=512&crop=auto'
+		image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
+		if art[-4:4] == '.png':
+			mimetype = 'image/png'
+		return DataObject(image, mimetype)
+	except:
+		return R(ART)
 
 ####################################################################################################
 
-def getHiResImage(imagepath):
-    try:
-        image = re.split('[?]+',imagepath)[0]
-        HTTP.PreCache(image, cacheTime = CACHE_1MONTH)
-        return image
-    except:
-        return R(ART)
+def GetHiResImage(imagepath):
+	try:
+		mimetype='image/jpeg'
+		art = re.split('[?]+',imagepath)[0] + '?width=1280&height=720&crop=auto'
+		image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
+		if art[-4:4] == '.png':
+			mimetype = 'image/png'
+		return DataObject(image, mimetype)
+	except:
+		return R(ART)
 
 ####################################################################################################
 
@@ -269,6 +273,8 @@ def concatPage(url,pageNum):
             return url +"?page=" + str(pageNum)
     except:
         return url +"?page=" + str(pageNum)    
+
+####################################################################################################
 
 def GetHTML(pageurl, pagenum):
 	pageurlconcat = concatPage(pageurl,pagenum)
@@ -297,10 +303,9 @@ def RSS_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
 		feed = GetHTML(pageurl,page).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
 		for entry in XML.ElementFromString(feed, True).xpath(context):
 			title = entry.xpath(delimiter+"div[@class='listContent']/h4/a")[0].text
-			thumb = doubleThumbSize(entry.xpath(delimiter+"div[@class='listThumb']//img")[0].get('src'))
-			nextart = getHiResImage(thumb)
+			imagepath = entry.xpath(delimiter+"div[@class='listThumb']//img")[0].get('src')
 			link = FEEDBASE + entry.xpath(delimiter+"div[@class='listThumb']//a")[0].get('href')
-			dir.Append(Function(DirectoryItem(RSS_parser,title,thumb=thumb),pageurl = link,backgnd_art=nextart))
+			dir.Append(Function(DirectoryItem(RSS_parser,title,thumb=Function(GetSquareThumb, imagepath=imagepath),art=Function(GetHiResImage, imagepath=imagepath)),pageurl = link))
 	   	if isLastPage(feed) == False:
 			dir.Append(Function(DirectoryItem(RSS_Artist_parser,"Next Page"),page = page+1,pageurl = pageurl))
     else:
@@ -309,15 +314,16 @@ def RSS_Artist_parser(sender, pageurl, page=1, replaceParent=False, query=None):
 			feed = GetHTML(pageurl,n).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">').replace('<div class="artistThumbWrapper">','').replace('</div></div>','')
 			for entry in XML.ElementFromString(feed, True).xpath(context):
 				title = entry.xpath(delimiter+"div[@class='listContent']/h4/a")[0].text
-				thumb = doubleThumbSize(entry.xpath(delimiter+"div[@class='listThumb']//img")[0].get('src'))
-				nextart = getHiResImage(thumb)
+				imagepath = entry.xpath(delimiter+"div[@class='listThumb']//img")[0].get('src')
 				link = FEEDBASE + entry.xpath(delimiter+"div[@class='listThumb']//a")[0].get('href')
-				dir.Append(Function(DirectoryItem(RSS_parser,title,thumb=thumb),pageurl = link,backgnd_art=nextart))
+				dir.Append(Function(DirectoryItem(RSS_parser,title,thumb=Function(GetSquareThumb, imagepath=imagepath),art=Function(GetHiResImage, imagepath=imagepath)),pageurl = link))
 			n = n+1
 			if isLastPage(feed) == True:
 				break
 
     return dir
+
+####################################################################################################
 
 def RSS_Search_parser(sender, pageurl, page=1, query=None, replaceParent=False):
     dir = MediaContainer(title2=sender.itemTitle,viewGroup="List", replaceParent=replaceParent)
@@ -327,42 +333,47 @@ def RSS_Search_parser(sender, pageurl, page=1, query=None, replaceParent=False):
 
     return dir
 
-def RSS_parser(sender, pageurl, page=1, backgnd_art=R(ART), replaceParent=False, query=None):
-    dir = MediaContainer(title2 = sender.title2, viewGroup="List", art=backgnd_art, replaceParent=replaceParent)
+####################################################################################################
+
+def RSS_parser(sender, pageurl, page=1, replaceParent=False, query=None):
+    dir = MediaContainer(title2 = sender.title2, viewGroup="List", art=sender.art, replaceParent=replaceParent)
 
     feed = GetHTML(pageurl,page).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
 
     if page > 1:
-      dir.Append(Function(DirectoryItem(RSS_parser,"Previous Page"),page = page-1,pageurl = pageurl,backgnd_art=backgnd_art))
-    
-    if (sender.title2 == "Search..." ) | (sender.title2 == "Channels") :
+      dir.Append(Function(DirectoryItem(RSS_parser,"Previous Page",art=sender.art),page = page-1,pageurl = pageurl))
+
+    if sender.title2 == "Search...":
       context = "//ul[@class='videoSearch list']/li"
-      delimiter = './'
       displayArtist = True
+    elif sender.title2 == "Channels" :
+      context = "//ul[@class='videoSearch list']/li"
+      displayArtist = False
     else:
       context = "//li[@class='entry']"
-      delimiter = './'      
-      displayArtist = False
+      if (sender.title2 == "Videos") | (sender.title2 == "Genres"):
+        displayArtist = True
+      else:
+        displayArtist = False
 
     for entry in XML.ElementFromString(feed, True).xpath(context):
-      videoId =  entry.xpath(delimiter+"div[@class='listContent']/h4/a")[0].get('rel') 
+      videoId =  entry.xpath("./div[@class='listContent']/h4/a")[0].get('rel') 
       title = GetTitle(videoId) 
       if title != '':
       	desc = ''
-      	if (backgnd_art == R(ART)) | (backgnd_art == None):
-      		art = GetArtistArt(videoId)
-      	else:
-      		art = backgnd_art
-      	thumb = GetTitleArt(videoId)
       	if displayArtist == True:
       		title = title + " - " + GetArtistName(videoId)
-
-      	dir.Append(Function(VideoItem(PlayVideo,title=title,summary=desc,thumb=thumb,art=art),vevo_id = videoId))          
-
+      	if (sender.art == R(ART)) | (sender.art == None):
+       		dir.Append(Function(VideoItem(PlayVideo,title=title,summary=desc,thumb=Function(GetTitleArt, vevo_id=videoId),art=Function(GetArtistArt, vevo_id=videoId)),vevo_id = videoId))
+      	else:
+      		dir.Append(Function(VideoItem(PlayVideo,title=title,summary=desc,thumb=Function(GetTitleArt, vevo_id=videoId),art=sender.art),vevo_id = videoId))
+   
     if isLastPage(feed) == False:
-      dir.Append(Function(DirectoryItem(RSS_parser,"Next Page"),page = page+1,pageurl = pageurl,backgnd_art=backgnd_art))
+      dir.Append(Function(DirectoryItem(RSS_parser,"Next Page",art=sender.art),page = page+1,pageurl = pageurl))
      
     if len(dir) == 0:
 		return MessageContainer('No Results','No video file could be found')
 		
     return dir
+
+####################################################################################################
