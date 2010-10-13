@@ -4,7 +4,7 @@
 			initialState="playing"
 			version="1.0">
 
-	<crop x="0" y="0" width="640" height="360"/>
+	<crop x="0" y="26" width="640" height="360"/>
 
 
 	<seekbar type="simple">

@@ -55,17 +55,17 @@ def Start():
 ####################################################################################################
 
 def UpdateCache():
-    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedToday", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedThisWeek", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedThisMonth", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedAllTime", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostRecent", CACHE_TIME)
+    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedToday")
+    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedThisWeek")
+    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedThisMonth")
+    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostViewedAllTime")
+    HTTP.PreCache(FEEDBASE + "/videos" + "?order=MostRecent")
 
-    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedToday", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedThisWeek", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedThisMonth", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedAllTime", CACHE_TIME)
-    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostRecent", CACHE_TIME)
+    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedToday")
+    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedThisWeek")
+    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedThisMonth")
+    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostViewedAllTime")
+    HTTP.PreCache(FEEDBASE + "/artists" + "?order=MostRecent")
 
 ####################################################################################################
 #Navigation
@@ -122,7 +122,7 @@ def AllArtistsSubMenu(sender):
 def AZArtistsSubMenu (sender):
     dir = MediaContainer(title2="Artists A to Z", viewGroup="List")
 
-    for Letter in XML.ElementFromURL(FEEDBASE+"/artists/a-z", True, cacheTime = CACHE_TIME).xpath("//ul[@id='romanIndex']/li/a") :
+    for Letter in XML.ElementFromURL(FEEDBASE+"/artists/a-z", True).xpath("//ul[@id='romanIndex']/li/a") :
       dir.Append(Function(DirectoryItem(RSS_Artist_parser,Letter.text), pageurl = FEEDBASE + Letter.get('href'),page = 0))
 
     return dir
@@ -131,9 +131,10 @@ def AZArtistsSubMenu (sender):
 def GenresSubMenu (sender):
     dir = MediaContainer(title2="Genres", viewGroup="List")
 
-    Genres = XML.ElementFromURL(FEEDBASE+"/videos", True, cacheTime = CACHE_TIME).xpath("//select[@id='genre']/option")
+    Genres = XML.ElementFromURL(FEEDBASE+"/videos", True).xpath("//select[@id='genre']/option")
     for Genre in Genres :
-      dir.Append(Function(DirectoryItem(RSS_parser,Genre.text),pageurl = FEEDBASE + "/genre/"+Genre.get("value")))
+      if Genre.text != 'All':
+        dir.Append(Function(DirectoryItem(RSS_parser,Genre.text),pageurl = FEEDBASE + "/genre/"+Genre.get("value")))
     return dir
 
 ####################################################################################################
@@ -142,7 +143,7 @@ def GenresSubMenu (sender):
 
 def GetTitle(vevo_id):
   try:
-    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ))
     return info['video']['title']
   except:
     return ''
@@ -151,7 +152,7 @@ def GetTitle(vevo_id):
 
 def GetArtistName(vevo_id):
 	  try:
-	    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+	    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ))
 	    name = info['video']['mainArtists'][0]['artistName']
 	    return name
 	  except:
@@ -161,7 +162,7 @@ def GetArtistName(vevo_id):
 
 def GetTitleArt(vevo_id, mimetype='image/jpeg'):
   try:
-    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ))
     art = info['video']['imageUrl'] +'?width=512&height=512&crop=auto'
     image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
     if art[-4:4] == '.png':
@@ -174,7 +175,7 @@ def GetTitleArt(vevo_id, mimetype='image/jpeg'):
 
 def GetArtistArt(vevo_id, mimetype='image/jpeg'):
   try:
-    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+    info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ))
     art = info['video']['mainArtists'][0]['imageUrl'] +'?width=1280&height=720&crop=auto'
     image = HTTP.Request(art, cacheTime=CACHE_1MONTH)
     if art[-4:4] == '.png':
@@ -186,7 +187,7 @@ def GetArtistArt(vevo_id, mimetype='image/jpeg'):
 ####################################################################################################
 
 def PlayVideo(sender, vevo_id ):
-  info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ), cacheTime=CACHE_1MONTH)
+  info = JSON.ObjectFromURL(VEVO_TITLE_INFO % ( vevo_id, authToken ))
   sourceType = info['video']['videoVersions'][0]['sourceType']
   id = info['video']['videoVersions'][0]['id']
 
