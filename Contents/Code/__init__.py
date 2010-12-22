@@ -201,12 +201,18 @@ def PlayVideo(sender, vevo_id ):
 def GetYouTubeVideo(video_id):
   yt_page = HTTP.Request(YT_VIDEO_PAGE % (video_id), cacheTime=1)
 
-  t = re.findall('&t=([^&]+)', yt_page)[0]
-  fmt_list = re.findall('&fmt_list=([^&]+)', yt_page)[0]
-  fmt_list = String.Unquote(fmt_list, usePlus=False)
-  fmts = re.findall('([0-9]+)[^,]*', fmt_list)
+  fmt_url_map = re.findall('"fmt_url_map".+?"([^"]+)', yt_page)[0]
+  fmt_url_map = fmt_url_map.replace('\/', '/').split(',')
 
-  index = YT_VIDEO_FORMATS.index( Prefs.Get('ytfmt') )
+  fmts = []
+  fmts_info = {}
+
+  for f in fmt_url_map:
+    (fmt, url) = f.split('|')
+    fmts.append(fmt)
+    fmts_info[str(fmt)] = url
+
+  index = YT_VIDEO_FORMATS.index(Prefs.Get('ytfmt'))
   if YT_FMT[index] in fmts:
     fmt = YT_FMT[index]
   else:
@@ -217,7 +223,7 @@ def GetYouTubeVideo(video_id):
       else:
         fmt = 5
 
-  url = YT_GET_VIDEO_URL % (video_id, t, fmt)
+  url = fmts_info[str(fmt)]
   return url
 
 ####################################################################################################
@@ -337,7 +343,8 @@ def RSS_Search_parser(sender, pageurl, page=1, query=None, replaceParent=False):
 ####################################################################################################
 
 def RSS_parser(sender, pageurl, page=1, replaceParent=False, query=None):
-    dir = MediaContainer(title2 = sender.title2, viewGroup="List", art=sender.art, replaceParent=replaceParent)
+    cookies = HTTP.GetCookiesForURL('http://www.youtube.com')
+    dir = MediaContainer(title2 = sender.title2, viewGroup="List", art=sender.art, replaceParent=replaceParent, httpCookies=cookies)
 
     feed = GetHTML(pageurl,page).replace('"alt "','"entry"').replace('"no-left-margin "','"entry"').replace('<li class="">','<li class="entry">')
 
